@@ -23,8 +23,3 @@ override-dependencies = [
 # Force torch stack to come from the PyTorch CPU wheel index (no CUDA)
 torch = [{ index = "pytorch-cpu" }]
 torchaudio = [{ index = "pytorch-cpu" }]
-
-[[tool.uv.index]]
-name = "pytorch-cpu"
-url = "https://download.pytorch.org/whl/cpu"
-explicit = true

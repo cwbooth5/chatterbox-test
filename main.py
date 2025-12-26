@@ -7,8 +7,51 @@ monkeypatches.apply_chatterbox_patches()
 
 from chatterbox.tts_turbo import ChatterboxTurboTTS
 
+def pick_device() -> str:
+    # Apple Silicon
+    if hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
+        return "mps"
+    # Linux ROCm/NVIDIA both show up here
+    if torch.cuda.is_available():
+        return "cuda"
+    return "cpu"
+
+DEVICE = pick_device()
+
 # Load the Turbo model (CPU for now)
-model = ChatterboxTurboTTS.from_pretrained(device="cpu")
+model = ChatterboxTurboTTS.from_pretrained(device=DEVICE)
+
+# For MPS compatibility, convert all float64 to float32 (MPS doesn't support float64)
+if DEVICE == "mps":
+    def convert_to_float32(obj):
+        """Recursively convert all float64 tensors to float32"""
+        if isinstance(obj, torch.nn.Module):
+            for param in obj.parameters():
+                if param.dtype == torch.float64:
+                    param.data = param.data.to(torch.float32)
+            for buf in obj.buffers():
+                if buf.dtype == torch.float64:
+                    buf.copy_(buf.to(torch.float32))
+            for child in obj.children():
+                convert_to_float32(child)
+        elif isinstance(obj, torch.Tensor):
+            if obj.dtype == torch.float64:
+                return obj.to(torch.float32)
+        else:
+            # For objects with __dict__, convert tensor attributes
+            for attr_name in dir(obj):
+                if attr_name.startswith('_'):
+                    continue
+                try:
+                    attr = getattr(obj, attr_name)
+                    if isinstance(attr, torch.nn.Module):
+                        convert_to_float32(attr)
+                    elif isinstance(attr, torch.Tensor) and attr.dtype == torch.float64:
+                        setattr(obj, attr_name, attr.to(torch.float32))
+                except (AttributeError, TypeError):
+                    continue
+
+    convert_to_float32(model)
 
 # Text to synthesize
 text = (

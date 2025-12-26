@@ -35,8 +35,18 @@ app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 templates = Jinja2Templates(directory=str(TEMPLATE_DIR))
 
 # ---- Model (load once) ----
-# CPU for now. If you later get ROCm working, change device to "cuda".
-DEVICE = "cpu"
+
+def pick_device() -> str:
+    # Apple Silicon
+    if hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
+        return "mps"
+    # Linux ROCm/NVIDIA both show up here
+    if torch.cuda.is_available():
+        return "cuda"
+    return "cpu"
+
+DEVICE = pick_device()
+print("Using device:", DEVICE)
 MODEL: Optional[ChatterboxTurboTTS] = None
 MODEL_LOCK = threading.Lock()  # protect lazy init
 
@@ -58,7 +68,7 @@ def set_job(job_id: str, **kwargs):
 def get_job(job_id: str) -> Dict:
     with JOBS_LOCK:
         return JOBS.get(job_id, {})
-    
+
 def ensure_wav_16k_mono(in_path: Path) -> Path:
     """
     This is here because we can piss off the audio processing libs

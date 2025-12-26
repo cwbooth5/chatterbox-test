@@ -16,6 +16,55 @@ from typing import Any
 import torch
 
 
+# Monkey patch torch.Tensor.to() to prevent float64 on MPS
+_original_tensor_to = torch.Tensor.to
+
+
+def _patched_tensor_to(self, *args, **kwargs):
+    """
+    Patch Tensor.to() to convert float64 to float32 on MPS.
+    MPS doesn't support float64, so we intercept the call.
+    """
+    # Check if we're trying to convert to MPS
+    device_arg = None
+    dtype_arg = None
+
+    # Parse positional arguments
+    if args:
+        first_arg = args[0]
+        if isinstance(first_arg, (str, torch.device)):
+            device_arg = first_arg
+        elif isinstance(first_arg, torch.dtype):
+            dtype_arg = first_arg
+        elif isinstance(first_arg, torch.Tensor):
+            device_arg = first_arg.device
+            dtype_arg = first_arg.dtype
+
+    # Parse keyword arguments
+    if 'device' in kwargs:
+        device_arg = kwargs['device']
+    if 'dtype' in kwargs:
+        dtype_arg = kwargs['dtype']
+
+    # Convert device to string for checking
+    device_str = str(device_arg) if device_arg else ""
+
+    # If target is MPS and dtype is float64, change to float32
+    if 'mps' in device_str and dtype_arg == torch.float64:
+        dtype_arg = torch.float32
+        kwargs['dtype'] = torch.float32
+
+    # If device is MPS and no dtype specified, ensure we don't get float64
+    if 'mps' in device_str and dtype_arg is None and self.dtype == torch.float64:
+        kwargs['dtype'] = torch.float32
+
+    # Call original with potentially modified arguments
+    return _original_tensor_to(self, *args, **kwargs)
+
+
+torch.Tensor.to = _patched_tensor_to
+
+
 def apply_chatterbox_patches() -> None:
     """
     Apply idempotent runtime patches.
@@ -31,21 +80,46 @@ def _patch_s3tokenizer() -> None:
 
     S3Tokenizer = s3_mod.S3Tokenizer
 
+    # --- Patch __init__ to convert float64 to float32 on MPS ---
+    if not getattr(S3Tokenizer.__init__, "__patched_init__", False):
+        orig_init = S3Tokenizer.__init__
+
+        def init_patched(self, *args, **kwargs):
+            orig_init(self, *args, **kwargs)
+            # After initialization, convert all float64 to float32 if on MPS
+            if hasattr(torch.backends, "mps") and hasattr(self, 'device') and "mps" in str(self.device):
+                for param in self.parameters() if hasattr(self, 'parameters') else []:
+                    if param.dtype == torch.float64:
+                        param.data = param.data.to(torch.float32)
+                if hasattr(self, '__dict__'):
+                    for attr_name, attr_val in self.__dict__.items():
+                        if isinstance(attr_val, torch.Tensor) and attr_val.dtype == torch.float64:
+                            setattr(self, attr_name, attr_val.to(torch.float32))
+
+        init_patched.__patched_init__ = True  # type: ignore[attr-defined]
+        init_patched.__wrapped__ = orig_init  # type: ignore[attr-defined]
+        S3Tokenizer.__init__ = init_patched  # type: ignore[assignment]
+
     # --- Patch log_mel_spectrogram dtype alignment at matmul ---
     if not getattr(S3Tokenizer.log_mel_spectrogram, "__patched__", False):
         orig_log_mel = S3Tokenizer.log_mel_spectrogram
 
         def log_mel_spectrogram_patched(self, wav: torch.Tensor) -> torch.Tensor:
             """
-            Wrap original, but ensure:
-            - intermediate mel filter matmul cannot mismatch dtypes
-            - output mel is float32 (safe for downstream mask_to_bias asserts)
+            Patch for MPS/device dtype consistency.
+            Ensures both operands of mel_filter @ magnitudes matmul are float32.
             """
-            # Call original to preserve behavior.
+            # Ensure input wav is float32 on the right device
+            wav = wav.to(device=self.device, dtype=torch.float32)
+
+            # Ensure _mel_filters is float32 on the device (critical for MPS matmul)
+            if hasattr(self, '_mel_filters') and self._mel_filters is not None:
+                self._mel_filters = self._mel_filters.to(device=self.device, dtype=torch.float32)
+
+            # Call the original method which should now have consistent dtypes
             mel = orig_log_mel(self, wav)
 
-            # Ensure consistent dtype for downstream models.
-            # (mask_to_bias only allows f32/bf16/f16)
+            # Final safety: ensure output is in acceptable dtype for downstream
             if mel.dtype not in (torch.float32, torch.float16, torch.bfloat16):
                 mel = mel.to(torch.float32)
 
@@ -59,20 +133,36 @@ def _patch_s3tokenizer() -> None:
     if not getattr(S3Tokenizer.forward, "__patched__", False):
         orig_forward = S3Tokenizer.forward
 
-        def forward_patched(self, wavs, max_len=None, **kwargs):
-            out = orig_forward(self, wavs, max_len=max_len, **kwargs)
-            return out
-
         # Some chatterbox versions compute mel inside forward(); safest is to
-        # ensure the wav input is float32 too.
-        # We'll wrap by converting each wav to float32 on entry.
+        # ensure the wav input is float32 too, and on the correct device.
+        # For MPS, we must also ensure float32 is used throughout (no float64 support).
         def forward_entry_cast(self, wavs, max_len=None, **kwargs):
+            # Convert inputs to float32 on the correct device
+            # Create fresh tensors to clear any dtype metadata
             wavs2 = []
             for w in wavs:
                 if torch.is_tensor(w):
-                    wavs2.append(w.to(torch.float32))
+                    # Create a new float32 tensor on the device to ensure no float64 references
+                    w_float32 = w.to(dtype=torch.float32, device=self.device)
+                    # Force data() to create a fresh tensor without any metadata
+                    w_fresh = w_float32.clone().detach()
+                    wavs2.append(w_fresh)
                 else:
                     wavs2.append(w)
+
+            # For MPS compatibility, ensure all parameters and buffers are float32
+            # (MPS doesn't support float64)
+            if hasattr(torch.backends, "mps") and "mps" in str(self.device):
+                # Convert all model parameters to float32 (permanent conversion)
+                for param in self.parameters():
+                    if param.dtype in (torch.float64, torch.double):
+                        param.data = param.to(dtype=torch.float32).data
+
+                # Convert all buffers to float32 (permanent conversion)
+                for name, buf in self.named_buffers():
+                    if buf.dtype in (torch.float64, torch.double):
+                        setattr(self, name, buf.to(dtype=torch.float32))
+
             return orig_forward(self, wavs2, max_len=max_len, **kwargs)
 
         forward_entry_cast.__patched__ = True  # type: ignore[attr-defined]
