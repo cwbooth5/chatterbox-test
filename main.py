@@ -2,6 +2,10 @@ from random import randint
 import torchaudio as ta
 import torch
 
+import warnings
+warnings.filterwarnings("ignore", category=UserWarning, module="perth")
+warnings.filterwarnings("ignore", category=FutureWarning, module="diffusers.models.lora")
+
 # total frickin hack. not proud.
 import monkeypatches
 monkeypatches.apply_chatterbox_patches()

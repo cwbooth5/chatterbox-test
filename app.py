@@ -15,6 +15,10 @@ from fastapi.responses import HTMLResponse, FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
+import warnings
+warnings.filterwarnings("ignore", category=UserWarning, module="perth")
+warnings.filterwarnings("ignore", category=FutureWarning, module="diffusers.models.lora")
+
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
