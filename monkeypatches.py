@@ -10,8 +10,6 @@ Goal:
 
 from __future__ import annotations
 
-import types
-from typing import Any
 
 import torch
 
@@ -24,6 +22,8 @@ def _patched_tensor_to(self, *args, **kwargs):
     """
     Patch Tensor.to() to convert float64 to float32 on MPS.
     MPS doesn't support float64, so we intercept the call.
+
+    This is specifically here so we can run the turbo model on MPS.
     """
     # Check if we're trying to convert to MPS
     device_arg = None
