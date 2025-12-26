@@ -1,6 +1,6 @@
 # chatterbox-test
 
-This is an experiment. It's a voice cloning tool that takes a short input clip, some text you write, and then it generates an output .wav file using the reference voice. It's built on [chatterbox-tts](https://github.com/resemble-ai/chatterbox/blob/master/example_for_mac.py).
+This is an experiment. It's a voice cloning tool that takes a short input clip, some text you write, and then it generates an output .wav file using the reference voice. It's built on [chatterbox-tts](https://github.com/resemble-ai/chatterbox).
 
 There are a couple models this thing can use:
 
