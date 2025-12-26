@@ -63,7 +63,7 @@ text = (
 )
 
 # this would have to be the sample of a voice to clone
-ref_wav, ref_sr = ta.load("reading-text-voice.wav")  # shape: [C, T]
+ref_wav, ref_sr = ta.load("drifter.wav")  # shape: [C, T]
 
 # Convert to mono if needed
 if ref_wav.shape[0] > 1:
