@@ -1,0 +1,30 @@
+[project]
+name = "chatterbox-test"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+  "chatterbox-tts==0.1.6",
+  # Optional: silences the diffusers LoRA warning
+  "peft>=0.13.0",
+  # Optional: chatterbox uses this for watermarking; harmless to pin explicitly
+  "resemble-perth>=1.0.1",
+]
+
+[tool.uv]
+# Prevent numpy 2.4 (breaks numba -> librosa)
+override-dependencies = [
+  "numpy<2.4",
+  "setuptools<81",
+]
+
+[tool.uv.sources]
+# Force torch stack to come from the PyTorch CPU wheel index (no CUDA)
+torch = [{ index = "pytorch-cpu" }]
+torchaudio = [{ index = "pytorch-cpu" }]
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true

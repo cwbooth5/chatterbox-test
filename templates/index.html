@@ -1,0 +1,50 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Chatterbox Voice Clone</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="stylesheet" href="/static/style.css" />
+  </head>
+  <body>
+    <main class="wrap">
+      <h1>Chatterbox Voice Clone (local)</h1>
+
+      <form id="form">
+        <label>
+          Reference voice WAV
+          <input id="voice_wav" name="voice_wav" type="file" accept=".wav,audio/wav" required />
+        </label>
+
+        <label>
+          Text to synthesize
+          <textarea id="text" name="text" rows="4" required>Hi there, this is Bill [chuckle], and this is a test of the emergency broadcast system. Also, my hovercraft is full of eels.</textarea>
+        </label>
+
+        <button id="btn" type="submit">Generate</button>
+      </form>
+
+      <section id="status" class="status hidden">
+        <div class="row">
+          <div id="state">Queued…</div>
+          <div id="pct">0%</div>
+        </div>
+        <div class="bar">
+          <div id="barFill" class="barFill"></div>
+        </div>
+      </section>
+
+      <section id="result" class="result hidden">
+        <h2>Result</h2>
+        <audio id="player" controls></audio>
+        <div class="actions">
+          <a id="download" download>Download WAV</a>
+        </div>
+      </section>
+
+      <section id="error" class="error hidden"></section>
+    </main>
+
+    <script src="/static/app.js"></script>
+  </body>
+</html>
