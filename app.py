@@ -46,7 +46,7 @@ def pick_device() -> str:
     return "cpu"
 
 DEVICE = pick_device()
-print("Using device:", DEVICE)
+print(f"Using device: {DEVICE}")
 MODEL: Optional[ChatterboxTurboTTS] = None
 MODEL_LOCK = threading.Lock()  # protect lazy init
 

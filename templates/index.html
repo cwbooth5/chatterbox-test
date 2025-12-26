@@ -18,7 +18,7 @@
 
         <label>
           Text to synthesize
-          <textarea id="text" name="text" rows="4" required>Hi there, this is Bill [chuckle], and this is a test of the emergency broadcast system. Also, my hovercraft is full of eels.</textarea>
+          <textarea id="text" name="text" rows="4" required></textarea>
         </label>
 
         <button id="btn" type="submit">Generate</button>
@@ -44,6 +44,22 @@
 
       <section id="error" class="error hidden"></section>
     </main>
+
+    <script>
+      const APHORISMS = [
+        "Playing it safe can cause a lot of damage in the long run.",
+        "Hard work pays off over time, [laugh] but laziness pays off NOW.",
+        "Misfortune is a kind of fortune that never misses.",
+        "Mirrors would do well to reflect a little more before sending back images.",
+        "Those who were carried to a goal should not think they've reached it."
+      ];
+
+      // Load random aphorism on page load
+      document.addEventListener('DOMContentLoaded', () => {
+        const randomIndex = Math.floor(Math.random() * APHORISMS.length);
+        document.getElementById('text').value = APHORISMS[randomIndex];
+      });
+    </script>
 
     <script src="/static/app.js"></script>
   </body>

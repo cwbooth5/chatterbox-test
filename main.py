@@ -1,3 +1,4 @@
+from random import randint
 import torchaudio as ta
 import torch
 
@@ -17,7 +18,7 @@ def pick_device() -> str:
     return "cpu"
 
 DEVICE = pick_device()
-
+print(f"running on device: {DEVICE}")
 # Load the Turbo model (CPU for now)
 model = ChatterboxTurboTTS.from_pretrained(device=DEVICE)
 
@@ -53,14 +54,17 @@ if DEVICE == "mps":
 
     convert_to_float32(model)
 
-# Text to synthesize
-text = (
-    "Everything's going to have a common theme, that it plays into the worst of our biases and beliefs."
-    "It's like we used to spend our days outside, with real people, or alone at first. Newspapers and news networks had the information,"
-    "they had professional editors. Then we got the phones and became chronically online. We made the content for one another."
-    "You were the only editor required and could make up claims or invent information. Now we're firmly into the world where the GPUs make content for us."
-    "They are fundamentally designed to hallucinate, with a slight basis in reality."
-)
+choices = [
+    "Playing it safe can cause a lot of damage in the long run.",
+    "Hard work pays off over time, [laugh] but laziness pays off NOW.",
+    "Misfortune is a kind of fortune that never misses.",
+    "Mirrors would do well to reflect a little more before sending back images.",
+    "Those who were carried to a goal should not think they've reached it."
+]
+
+text = choices[randint(0,4)]
+
+print(f"Phrase to encode: {text}")
 
 # this would have to be the sample of a voice to clone
 ref_wav, ref_sr = ta.load("drifter.wav")  # shape: [C, T]
@@ -77,7 +81,7 @@ if ref_sr != 16000:
 ref_wav = ref_wav.to(dtype=torch.float32)
 
 # Save a normalized reference clip
-ref_path = "reading-text-voice_16k_f32.wav"
+ref_path = "drifter_16k_f32.wav"
 ta.save(ref_path, ref_wav, 16000)
 
 # --- GENERATE ---
