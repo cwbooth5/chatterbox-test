@@ -2,6 +2,7 @@ import os
 import uuid
 import time
 import threading
+import logging
 from pathlib import Path
 from typing import Dict, Optional
 import subprocess
@@ -13,6 +14,15 @@ from fastapi import FastAPI, UploadFile, File, Form, Request
 from fastapi.responses import HTMLResponse, FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+# Reduce verbosity from uvicorn and other noisy libraries
+logging.getLogger("uvicorn").setLevel(logging.WARNING)
+logging.getLogger("uvicorn.access").setLevel(logging.WARNING)
+logging.getLogger("chatterbox").setLevel(logging.WARNING)
 
 # done to hack our way out of weird inconsistencies in these dependencies, YMMV
 import monkeypatches
@@ -46,7 +56,7 @@ def pick_device() -> str:
     return "cpu"
 
 DEVICE = pick_device()
-print(f"Using device: {DEVICE}")
+logger.info(f"Using device: {DEVICE}")
 MODEL: Optional[ChatterboxTurboTTS] = None
 MODEL_LOCK = threading.Lock()  # protect lazy init
 
@@ -110,23 +120,30 @@ def preprocess_reference(in_path: Path) -> Path:
 
 def run_job(job_id: str, text: str, upload_path: Path):
     try:
+        logger.debug(f"[{job_id}] Starting preprocessing")
         set_job(job_id, status="preprocessing", progress=0.1)
         upload_path = ensure_wav_16k_mono(upload_path)
         ref_path = preprocess_reference(upload_path)
-        #ref_path = preprocess_reference(upload_path)
+
+        logger.info(f"[{job_id}] Starting generation")
+        logger.info(f"Using phrase: {text}")
         set_job(job_id, status="generating", progress=0.4)
 
+        logger.info("setting up model")
         model = get_model()
 
-        # Generate
+        logger.info("starting generation")
         wav = model.generate(text, audio_prompt_path=str(ref_path), cfg_weight=0.3, exaggeration=0.8)
 
+        logger.debug(f"[{job_id}] Generation complete, saving audio")
         set_job(job_id, status="saving", progress=0.8)
         out_path = OUT_DIR / f"{job_id}.wav"
         ta.save(str(out_path), wav, model.sr)
 
+        logger.info(f"[{job_id}] Job complete: {out_path.name}")
         set_job(job_id, status="done", progress=1.0, output=str(out_path.name))
     except Exception as e:
+        logger.error(f"[{job_id}] Job failed: {e}")
         set_job(job_id, status="error", error=str(e), progress=1.0)
 
 @app.get("/", response_class=HTMLResponse)
