@@ -12,7 +12,12 @@ of the generated audio a little easier.
 ## Setup
 
 You need a huggingface token to pull down the model weights initially (just once). It just needs to be a read-only token.
-Once you do that, you never do anything off the box. Everything's local.
+Once you do that, you never do anything off the box. Everything's local. You have a couple choices for using that token.
+
+1. `hf auth login` (if you have this installed)
+2. `export HF_TOKEN=YOUR_TOKEN_HERE python ./main.py`
+
+The main.py script just runs a quick clone of the voice sample checked into this repo. The first time that runs, it should download all the weights.
 
 Set up a virtualenv around the code.
 
