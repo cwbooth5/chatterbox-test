@@ -30,6 +30,83 @@ button:disabled { opacity: 0.6; cursor: not-allowed; }
 
 .param-value { min-width: 50px; text-align: right; font-family: monospace; font-size: 14px; color: #5b7cfa; font-weight: 500; }
 
+/* Model selection dropdown */
+.model-select {
+  width: 100%;
+  padding: 10px;
+  border-radius: 10px;
+  border: 1px solid #2b3350;
+  background: #0f1220;
+  color: #e6e6e6;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.model-select:focus {
+  outline: none;
+  border-color: #5b7cfa;
+}
+
+/* Parameter groups */
+.param-group {
+  display: grid;
+  gap: 14px;
+  padding: 14px 0;
+}
+
+.param-group h3 {
+  font-size: 15px;
+  margin: 0 0 8px;
+  color: #9db3ff;
+  border-bottom: 1px solid #2b3350;
+  padding-bottom: 8px;
+}
+
+.model-specific-params {
+  border-top: 1px solid #2b3350;
+  margin-top: 8px;
+}
+
+/* Checkbox styling */
+input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  margin-right: 8px;
+  vertical-align: middle;
+}
+
+/* Text validation warning */
+.text-warning {
+  background: #2a1f10;
+  border: 1px solid #664400;
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin-top: -8px;
+  margin-bottom: 6px;
+  color: #ffd680;
+  font-size: 13px;
+}
+
+.text-warning strong {
+  display: block;
+  margin-bottom: 8px;
+  color: #ffca5d;
+}
+
+.text-warning p {
+  margin: 0;
+  line-height: 1.4;
+}
+
+.text-warning code {
+  background: #1a1510;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: monospace;
+  color: #ffca5d;
+}
+
 .status { margin-top: 16px; background: #11131a; padding: 14px; border-radius: 12px; border: 1px solid #222738; }
 .row { display:flex; justify-content: space-between; margin-bottom: 10px; font-size: 14px; }
 .bar { height: 10px; background: #0f1220; border: 1px solid #2b3350; border-radius: 999px; overflow: hidden; }

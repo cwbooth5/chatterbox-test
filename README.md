@@ -1,7 +1,13 @@
 # chatterbox-test
 
-This is an experiment. It's a voice cloning tool that takes a short input clip, some text you write, and then it generates an
-output .wav file using the reference voice.
+This is an experiment. It's a voice cloning tool that takes a short input clip, some text you write, and then it generates an output .wav file using the reference voice. It's built on [chatterbox-tts](https://github.com/resemble-ai/chatterbox/blob/master/example_for_mac.py).
+
+There are a couple models this thing can use:
+
+* `ChatterboxTTS`
+* `ChatterboxTurboTTS`
+
+The non-turbo model appears to work fine with a tiny patch to torch, as demonstrated in the example scripts over in the chatterbox-tts repo. What I'm doing here is getting the turbo model to work too. To get it to run, it involves more complicated dependency patching. I did whatever I could to get it to work. It's not quite as efficient as it could be probably, but it does work.
 
 Supported and tested setups:
 

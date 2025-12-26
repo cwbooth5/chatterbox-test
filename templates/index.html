@@ -25,51 +25,120 @@
           Text to synthesize
           <textarea id="text" name="text" rows="4" required></textarea>
         </label>
+        <div id="text-warning" class="text-warning hidden">
+          <strong>⚠️ Pronunciation Patterns Detected</strong>
+          <p>Your text contains patterns like <code>[laugh]</code>, <code>[cough]</code>, or <code>[sigh]</code> that will be pronounced literally by the standard model. Switch to the Turbo model for proper pronunciation, or remove these patterns for coherent output.</p>
+        </div>
+
+        <label>
+          Model Type
+          <select id="model_type" name="model_type" class="model-select">
+            <option value="turbo" selected>ChatterboxTurboTTS (Faster)</option>
+            <option value="standard">ChatterboxTTS (More Parameters)</option>
+          </select>
+          <div class="param-description">Turbo is faster; standard supports more fine-tuning</div>
+        </label>
 
         <button id="params-toggle" class="params-toggle" type="button">Advanced Parameters ▼</button>
 
         <div id="params-section" class="params-section">
-          <div class="param-control">
-            <label>
-              Temperature (Default: 0.8)
-              <div class="param-description">Lower = more consistent/focused, Higher = more varied/creative</div>
-            </label>
-            <div class="param-input-group">
-              <input type="range" name="temperature" id="temperature" class="param-slider" min="0.5" max="1.2" step="0.1" value="0.8" />
-              <span class="param-value" data-target="temperature">0.8</span>
+          <!-- Common Parameters -->
+          <div class="param-group">
+            <h3>Common Parameters</h3>
+
+            <div class="param-control">
+              <label>
+                Temperature (Default: 0.8)
+                <div class="param-description">Lower = more consistent/focused, Higher = more varied/creative</div>
+              </label>
+              <div class="param-input-group">
+                <input type="range" name="temperature" id="temperature" class="param-slider" min="0.5" max="1.2" step="0.1" value="0.8" />
+                <span class="param-value" data-target="temperature">0.8</span>
+              </div>
+            </div>
+
+            <div class="param-control">
+              <label>
+                Top P - Nucleus Sampling (Default: 0.95)
+                <div class="param-description">Lower = more focused/predictable, Higher = more diverse choices</div>
+              </label>
+              <div class="param-input-group">
+                <input type="range" name="top_p" id="top_p" class="param-slider" min="0.0" max="1.0" step="0.01" value="0.95" />
+                <span class="param-value" data-target="top_p">0.95</span>
+              </div>
+            </div>
+
+            <div class="param-control">
+              <label>
+                Repetition Penalty (Default: 1.2)
+                <div class="param-description">1.0 = no penalty (may repeat), Higher = less repetition</div>
+              </label>
+              <div class="param-input-group">
+                <input type="range" name="repetition_penalty" id="repetition_penalty" class="param-slider" min="1.0" max="1.5" step="0.1" value="1.2" />
+                <span class="param-value" data-target="repetition_penalty">1.2</span>
+              </div>
             </div>
           </div>
 
-          <div class="param-control">
-            <label>
-              Top P - Nucleus Sampling (Default: 0.95)
-              <div class="param-description">Lower = more focused/predictable, Higher = more diverse choices</div>
-            </label>
-            <div class="param-input-group">
-              <input type="range" name="top_p" id="top_p" class="param-slider" min="0.85" max="0.98" step="0.01" value="0.95" />
-              <span class="param-value" data-target="top_p">0.95</span>
+          <!-- Turbo-Only Parameters -->
+          <div id="turbo-params" class="param-group model-specific-params">
+            <h3>Turbo Model Parameters</h3>
+
+            <div class="param-control">
+              <label>
+                Top K (Default: 1000)
+                <div class="param-description">Lower = more focused vocabulary, Higher = more varied word choices</div>
+              </label>
+              <div class="param-input-group">
+                <input type="range" name="top_k" id="top_k" class="param-slider" min="100" max="1000" step="50" value="1000" />
+                <span class="param-value" data-target="top_k">1000</span>
+              </div>
+            </div>
+
+            <div class="param-control">
+              <label>
+                <input type="checkbox" name="norm_loudness" id="norm_loudness" checked />
+                Normalize Loudness
+                <div class="param-description">Normalize output audio loudness</div>
+              </label>
             </div>
           </div>
 
-          <div class="param-control">
-            <label>
-              Top K (Default: 1000)
-              <div class="param-description">Lower = more focused vocabulary, Higher = more varied word choices</div>
-            </label>
-            <div class="param-input-group">
-              <input type="range" name="top_k" id="top_k" class="param-slider" min="100" max="1000" step="50" value="1000" />
-              <span class="param-value" data-target="top_k">1000</span>
-            </div>
-          </div>
+          <!-- Standard-Only Parameters -->
+          <div id="standard-params" class="param-group model-specific-params" style="display: none;">
+            <h3>Standard Model Parameters</h3>
 
-          <div class="param-control">
-            <label>
-              Repetition Penalty (Default: 1.2)
-              <div class="param-description">1.0 = no penalty (may repeat), Higher = less repetition</div>
-            </label>
-            <div class="param-input-group">
-              <input type="range" name="repetition_penalty" id="repetition_penalty" class="param-slider" min="1.0" max="1.5" step="0.1" value="1.2" />
-              <span class="param-value" data-target="repetition_penalty">1.2</span>
+            <div class="param-control">
+              <label>
+                Min P (Default: 0.05)
+                <div class="param-description">Minimum probability threshold for token selection</div>
+              </label>
+              <div class="param-input-group">
+                <input type="range" name="min_p" id="min_p" class="param-slider" min="0.0" max="0.1" step="0.01" value="0.05" />
+                <span class="param-value" data-target="min_p">0.05</span>
+              </div>
+            </div>
+
+            <div class="param-control">
+              <label>
+                CFG Weight (Default: 0.5)
+                <div class="param-description">Classifier-free guidance strength</div>
+              </label>
+              <div class="param-input-group">
+                <input type="range" name="cfg_weight" id="cfg_weight" class="param-slider" min="0.0" max="1.0" step="0.1" value="0.5" />
+                <span class="param-value" data-target="cfg_weight">0.5</span>
+              </div>
+            </div>
+
+            <div class="param-control">
+              <label>
+                Exaggeration (Default: 0.5)
+                <div class="param-description">Voice characteristic emphasis</div>
+              </label>
+              <div class="param-input-group">
+                <input type="range" name="exaggeration" id="exaggeration" class="param-slider" min="0.0" max="1.0" step="0.1" value="0.5" />
+                <span class="param-value" data-target="exaggeration">0.5</span>
+              </div>
             </div>
           </div>
         </div>
@@ -107,29 +176,55 @@
         "Those who were carried to a goal should not think they've reached it."
       ];
 
-      // Parameter persistence and UI handling
-      const PARAM_KEYS = ['temperature', 'top_p', 'top_k', 'repetition_penalty'];
+      // Extended parameter keys for both models
+      const COMMON_PARAM_KEYS = ['temperature', 'top_p', 'repetition_penalty'];
+      const TURBO_PARAM_KEYS = ['top_k', 'norm_loudness'];
+      const STANDARD_PARAM_KEYS = ['min_p', 'cfg_weight', 'exaggeration'];
+      const ALL_PARAM_KEYS = [...COMMON_PARAM_KEYS, ...TURBO_PARAM_KEYS, ...STANDARD_PARAM_KEYS];
+
       const LOCAL_STORAGE_KEY = 'chatterbox_params';
+      const MODEL_STORAGE_KEY = 'chatterbox_model_type';
 
       function saveParameters() {
         const params = {};
-        PARAM_KEYS.forEach(key => {
+        ALL_PARAM_KEYS.forEach(key => {
           const elem = document.getElementById(key);
-          params[key] = elem ? elem.value : undefined;
+          if (elem) {
+            params[key] = elem.type === 'checkbox' ? elem.checked : elem.value;
+          }
         });
         localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(params));
+
+        // Save model type separately
+        const modelType = document.getElementById('model_type');
+        if (modelType) {
+          localStorage.setItem(MODEL_STORAGE_KEY, modelType.value);
+        }
       }
 
       function loadParameters() {
+        // Load model type first
+        const savedModelType = localStorage.getItem(MODEL_STORAGE_KEY);
+        const modelTypeSelect = document.getElementById('model_type');
+        if (savedModelType && modelTypeSelect) {
+          modelTypeSelect.value = savedModelType;
+          updateModelSpecificParams(savedModelType);
+        }
+
+        // Load parameter values
         const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
         if (saved) {
           try {
             const params = JSON.parse(saved);
-            PARAM_KEYS.forEach(key => {
+            ALL_PARAM_KEYS.forEach(key => {
               const elem = document.getElementById(key);
-              if (elem && params[key]) {
-                elem.value = params[key];
-                updateParamValue(key);
+              if (elem && params[key] !== undefined) {
+                if (elem.type === 'checkbox') {
+                  elem.checked = params[key];
+                } else {
+                  elem.value = params[key];
+                  updateParamValue(key);
+                }
               }
             });
           } catch (e) {
@@ -143,7 +238,47 @@
         const valueDisplay = document.querySelector(`.param-value[data-target="${paramId}"]`);
         if (elem && valueDisplay) {
           const value = parseFloat(elem.value);
-          valueDisplay.textContent = paramId === 'top_k' ? Math.round(value) : value.toFixed(paramId === 'top_p' ? 2 : 1);
+          // Format based on parameter type
+          if (paramId === 'top_k') {
+            valueDisplay.textContent = Math.round(value);
+          } else if (paramId === 'top_p' || paramId === 'min_p') {
+            valueDisplay.textContent = value.toFixed(2);
+          } else {
+            valueDisplay.textContent = value.toFixed(1);
+          }
+        }
+      }
+
+      function updateModelSpecificParams(modelType) {
+        const turboParams = document.getElementById('turbo-params');
+        const standardParams = document.getElementById('standard-params');
+
+        if (modelType === 'turbo') {
+          turboParams.style.display = 'block';
+          standardParams.style.display = 'none';
+        } else if (modelType === 'standard') {
+          turboParams.style.display = 'none';
+          standardParams.style.display = 'block';
+        }
+
+        validateTextPatterns();
+        saveParameters();
+      }
+
+      function validateTextPatterns() {
+        const text = document.getElementById('text').value;
+        const modelType = document.getElementById('model_type').value;
+        const warning = document.getElementById('text-warning');
+
+        // Pattern to detect [laugh], [cough], [sigh], [pause], etc.
+        const pronunciationPattern = /\[[^\]]+\]/g;
+        const hasPatterns = pronunciationPattern.test(text);
+
+        // Show warning only if standard model is selected AND patterns are found
+        if (modelType === 'standard' && hasPatterns) {
+          warning.classList.remove('hidden');
+        } else {
+          warning.classList.add('hidden');
         }
       }
 
@@ -152,8 +287,22 @@
         const randomIndex = Math.floor(Math.random() * APHORISMS.length);
         document.getElementById('text').value = APHORISMS[randomIndex];
 
-        // Load saved parameters
+        // Load saved parameters and model type
         loadParameters();
+
+        // Setup model type change handler
+        const modelTypeSelect = document.getElementById('model_type');
+        if (modelTypeSelect) {
+          modelTypeSelect.addEventListener('change', (e) => {
+            updateModelSpecificParams(e.target.value);
+          });
+        }
+
+        // Setup text input validation
+        const textInput = document.getElementById('text');
+        if (textInput) {
+          textInput.addEventListener('input', validateTextPatterns);
+        }
 
         // Setup parameter toggle
         const toggle = document.getElementById('params-toggle');
@@ -163,18 +312,24 @@
             e.preventDefault();
             section.classList.toggle('visible');
             toggle.classList.toggle('active');
-            toggle.textContent = section.classList.contains('visible') ? 'Advanced Parameters ▲' : 'Advanced Parameters ▼';
+            toggle.textContent = section.classList.contains('visible')
+              ? 'Advanced Parameters ▲'
+              : 'Advanced Parameters ▼';
           });
         }
 
-        // Setup slider value updates
-        PARAM_KEYS.forEach(key => {
+        // Setup slider and checkbox value updates for all parameters
+        ALL_PARAM_KEYS.forEach(key => {
           const elem = document.getElementById(key);
           if (elem) {
-            elem.addEventListener('input', () => {
-              updateParamValue(key);
-              saveParameters();
-            });
+            if (elem.type === 'checkbox') {
+              elem.addEventListener('change', saveParameters);
+            } else {
+              elem.addEventListener('input', () => {
+                updateParamValue(key);
+                saveParameters();
+              });
+            }
           }
         });
       });
