@@ -26,6 +26,54 @@
           <textarea id="text" name="text" rows="4" required></textarea>
         </label>
 
+        <button id="params-toggle" class="params-toggle" type="button">Advanced Parameters ▼</button>
+
+        <div id="params-section" class="params-section">
+          <div class="param-control">
+            <label>
+              Temperature (Default: 0.8)
+              <div class="param-description">Lower = more consistent/focused, Higher = more varied/creative</div>
+            </label>
+            <div class="param-input-group">
+              <input type="range" name="temperature" id="temperature" class="param-slider" min="0.5" max="1.2" step="0.1" value="0.8" />
+              <span class="param-value" data-target="temperature">0.8</span>
+            </div>
+          </div>
+
+          <div class="param-control">
+            <label>
+              Top P - Nucleus Sampling (Default: 0.95)
+              <div class="param-description">Lower = more focused/predictable, Higher = more diverse choices</div>
+            </label>
+            <div class="param-input-group">
+              <input type="range" name="top_p" id="top_p" class="param-slider" min="0.85" max="0.98" step="0.01" value="0.95" />
+              <span class="param-value" data-target="top_p">0.95</span>
+            </div>
+          </div>
+
+          <div class="param-control">
+            <label>
+              Top K (Default: 1000)
+              <div class="param-description">Lower = more focused vocabulary, Higher = more varied word choices</div>
+            </label>
+            <div class="param-input-group">
+              <input type="range" name="top_k" id="top_k" class="param-slider" min="100" max="1000" step="50" value="1000" />
+              <span class="param-value" data-target="top_k">1000</span>
+            </div>
+          </div>
+
+          <div class="param-control">
+            <label>
+              Repetition Penalty (Default: 1.2)
+              <div class="param-description">1.0 = no penalty (may repeat), Higher = less repetition</div>
+            </label>
+            <div class="param-input-group">
+              <input type="range" name="repetition_penalty" id="repetition_penalty" class="param-slider" min="1.0" max="1.5" step="0.1" value="1.2" />
+              <span class="param-value" data-target="repetition_penalty">1.2</span>
+            </div>
+          </div>
+        </div>
+
         <button id="btn" type="submit">Generate</button>
       </form>
 
@@ -59,10 +107,76 @@
         "Those who were carried to a goal should not think they've reached it."
       ];
 
-      // Load random aphorism on page load
+      // Parameter persistence and UI handling
+      const PARAM_KEYS = ['temperature', 'top_p', 'top_k', 'repetition_penalty'];
+      const LOCAL_STORAGE_KEY = 'chatterbox_params';
+
+      function saveParameters() {
+        const params = {};
+        PARAM_KEYS.forEach(key => {
+          const elem = document.getElementById(key);
+          params[key] = elem ? elem.value : undefined;
+        });
+        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(params));
+      }
+
+      function loadParameters() {
+        const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
+        if (saved) {
+          try {
+            const params = JSON.parse(saved);
+            PARAM_KEYS.forEach(key => {
+              const elem = document.getElementById(key);
+              if (elem && params[key]) {
+                elem.value = params[key];
+                updateParamValue(key);
+              }
+            });
+          } catch (e) {
+            console.error('Failed to load parameters:', e);
+          }
+        }
+      }
+
+      function updateParamValue(paramId) {
+        const elem = document.getElementById(paramId);
+        const valueDisplay = document.querySelector(`.param-value[data-target="${paramId}"]`);
+        if (elem && valueDisplay) {
+          const value = parseFloat(elem.value);
+          valueDisplay.textContent = paramId === 'top_k' ? Math.round(value) : value.toFixed(paramId === 'top_p' ? 2 : 1);
+        }
+      }
+
+      // Load random aphorism and parameters on page load
       document.addEventListener('DOMContentLoaded', () => {
         const randomIndex = Math.floor(Math.random() * APHORISMS.length);
         document.getElementById('text').value = APHORISMS[randomIndex];
+
+        // Load saved parameters
+        loadParameters();
+
+        // Setup parameter toggle
+        const toggle = document.getElementById('params-toggle');
+        const section = document.getElementById('params-section');
+        if (toggle && section) {
+          toggle.addEventListener('click', (e) => {
+            e.preventDefault();
+            section.classList.toggle('visible');
+            toggle.classList.toggle('active');
+            toggle.textContent = section.classList.contains('visible') ? 'Advanced Parameters ▲' : 'Advanced Parameters ▼';
+          });
+        }
+
+        // Setup slider value updates
+        PARAM_KEYS.forEach(key => {
+          const elem = document.getElementById(key);
+          if (elem) {
+            elem.addEventListener('input', () => {
+              updateParamValue(key);
+              saveParameters();
+            });
+          }
+        });
       });
     </script>
 

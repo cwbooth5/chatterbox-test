@@ -1,12 +1,10 @@
-import os
 import uuid
 import time
 import threading
 import logging
-from pathlib import Path
-from typing import Dict, Optional
 import subprocess
 from pathlib import Path
+from typing import Dict, Optional
 
 import torch
 import torchaudio as ta
@@ -29,10 +27,10 @@ logging.getLogger("uvicorn.access").setLevel(logging.WARNING)
 logging.getLogger("chatterbox").setLevel(logging.WARNING)
 
 # done to hack our way out of weird inconsistencies in these dependencies, YMMV
-import monkeypatches
+import monkeypatches  # noqa: E402
 monkeypatches.apply_chatterbox_patches()
 
-from chatterbox.tts_turbo import ChatterboxTurboTTS
+from chatterbox.tts_turbo import ChatterboxTurboTTS  # noqa: E402
 
 BASE_DIR = Path(__file__).parent.resolve()
 DATA_DIR = BASE_DIR / "data"
@@ -122,7 +120,7 @@ def preprocess_reference(in_path: Path) -> Path:
     ta.save(str(out_path), wav, 16000)
     return out_path
 
-def run_job(job_id: str, text: str, upload_path: Path):
+def run_job(job_id: str, text: str, upload_path: Path, params: dict):
     try:
         logger.debug(f"[{job_id}] Starting preprocessing")
         set_job(job_id, status="preprocessing", progress=0.1)
@@ -137,7 +135,14 @@ def run_job(job_id: str, text: str, upload_path: Path):
         model = get_model()
 
         logger.info("starting generation")
-        wav = model.generate(text, audio_prompt_path=str(ref_path), cfg_weight=0.3, exaggeration=0.8)
+        wav = model.generate(
+            text,
+            audio_prompt_path=str(ref_path),
+            temperature=params['temperature'],
+            top_p=params['top_p'],
+            top_k=params['top_k'],
+            repetition_penalty=params['repetition_penalty']
+        )
 
         logger.debug(f"[{job_id}] Generation complete, saving audio")
         set_job(job_id, status="saving", progress=0.8)
@@ -150,6 +155,15 @@ def run_job(job_id: str, text: str, upload_path: Path):
         logger.error(f"[{job_id}] Job failed: {e}")
         set_job(job_id, status="error", error=str(e), progress=1.0)
 
+def validate_and_clamp_params(temperature: float, top_p: float, top_k: int, repetition_penalty: float) -> dict:
+    """Validate and clamp parameters to safe ranges"""
+    return {
+        'temperature': max(0.5, min(1.2, float(temperature))),
+        'top_p': max(0.85, min(0.98, float(top_p))),
+        'top_k': max(100, min(1000, int(top_k))),
+        'repetition_penalty': max(1.0, min(1.5, float(repetition_penalty)))
+    }
+
 @app.get("/", response_class=HTMLResponse)
 def index(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
@@ -158,6 +172,10 @@ def index(request: Request):
 async def start(
     text: str = Form(...),
     voice_wav: UploadFile = File(...),
+    temperature: float = Form(0.8),
+    top_p: float = Form(0.95),
+    top_k: int = Form(1000),
+    repetition_penalty: float = Form(1.2),
 ):
     job_id = uuid.uuid4().hex
 
@@ -165,6 +183,9 @@ async def start(
     upload_path = UPLOAD_DIR / f"{job_id}_{voice_wav.filename}"
     content = await voice_wav.read()
     upload_path.write_bytes(content)
+
+    # Validate and clamp parameters
+    params = validate_and_clamp_params(temperature, top_p, top_k, repetition_penalty)
 
     with JOBS_LOCK:
         JOBS[job_id] = {
@@ -177,7 +198,7 @@ async def start(
         }
 
     # Background thread
-    t = threading.Thread(target=run_job, args=(job_id, text, upload_path), daemon=True)
+    t = threading.Thread(target=run_job, args=(job_id, text, upload_path, params), daemon=True)
     t.start()
 
     return JSONResponse({"job_id": job_id})

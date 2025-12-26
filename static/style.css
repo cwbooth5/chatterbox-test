@@ -8,6 +8,28 @@ textarea { padding: 10px; border-radius: 10px; border: 1px solid #2b3350; backgr
 button { padding: 10px 14px; border-radius: 10px; border: 1px solid #2b3350; background: #1a2240; color: #fff; cursor: pointer; }
 button:disabled { opacity: 0.6; cursor: not-allowed; }
 
+.params-toggle { width: 100%; text-align: left; margin-top: 6px; }
+.params-toggle.active { background: #2b3350; }
+
+.params-section { display: none; grid-template-columns: 1fr; gap: 16px; padding: 12px 0; border-top: 1px solid #2b3350; border-bottom: 1px solid #2b3350; margin: 4px 0; }
+.params-section.visible { display: grid; }
+
+.param-control { display: grid; gap: 8px; }
+.param-control > label { margin-bottom: 4px; }
+
+.param-description { font-size: 13px; color: #a0a0a0; font-weight: normal; }
+
+.param-input-group { display: flex; gap: 12px; align-items: center; }
+.param-slider { flex: 1; height: 6px; -webkit-appearance: none; appearance: none; background: #0f1220; border-radius: 3px; outline: none; border: 1px solid #2b3350; }
+
+.param-slider::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 18px; height: 18px; border-radius: 50%; background: #5b7cfa; cursor: pointer; border: 2px solid #11131a; }
+.param-slider::-moz-range-thumb { width: 18px; height: 18px; border-radius: 50%; background: #5b7cfa; cursor: pointer; border: 2px solid #11131a; }
+
+.param-slider::-webkit-slider-thumb:hover { background: #7b9cfa; }
+.param-slider::-moz-range-thumb:hover { background: #7b9cfa; }
+
+.param-value { min-width: 50px; text-align: right; font-family: monospace; font-size: 14px; color: #5b7cfa; font-weight: 500; }
+
 .status { margin-top: 16px; background: #11131a; padding: 14px; border-radius: 12px; border: 1px solid #222738; }
 .row { display:flex; justify-content: space-between; margin-bottom: 10px; font-size: 14px; }
 .bar { height: 10px; background: #0f1220; border: 1px solid #2b3350; border-radius: 999px; overflow: hidden; }
