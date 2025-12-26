@@ -3,7 +3,7 @@ body { font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto; m
 h1 { font-size: 22px; margin: 0 0 16px; }
 form { display: grid; gap: 14px; background: #11131a; padding: 16px; border-radius: 12px; border: 1px solid #222738; }
 label { display: grid; gap: 8px; font-size: 14px; }
-textarea, input[type="file"] { width: 100%; }
+textarea, input[type="file"] { width: 100%; box-sizing: border-box; }
 textarea { padding: 10px; border-radius: 10px; border: 1px solid #2b3350; background: #0f1220; color: #e6e6e6; }
 button { padding: 10px 14px; border-radius: 10px; border: 1px solid #2b3350; background: #1a2240; color: #fff; cursor: pointer; }
 button:disabled { opacity: 0.6; cursor: not-allowed; }
