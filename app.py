@@ -30,6 +30,9 @@ logging.getLogger("chatterbox").setLevel(logging.WARNING)
 
 # done to hack our way out of weird inconsistencies in these dependencies, YMMV
 import monkeypatches  # noqa: E402
+
+# Optional: disable watermarking by setting this to True before applying patches
+# monkeypatches.DISABLE_WATERMARKING = True
 monkeypatches.apply_chatterbox_patches()
 
 from chatterbox.tts import ChatterboxTTS  # noqa: E402

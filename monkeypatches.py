@@ -1,17 +1,32 @@
 """
-Runtime monkeypatches for Chatterbox dtype issues.
+Runtime monkeypatches for Chatterbox dtype issues and watermarking control.
 
 Import this module BEFORE importing chatterbox anywhere.
 
 Goal:
 - Avoid float64/float32 mismatches in the S3Tokenizer mel path
 - Avoid float64 mels entering the VoiceEncoder LSTM
+- Optionally disable Perth watermarking
+
+Usage:
+    To disable watermarking, set DISABLE_WATERMARKING before importing Chatterbox:
+
+    import monkeypatches
+    monkeypatches.DISABLE_WATERMARKING = True
+    monkeypatches.apply_chatterbox_patches()
+
+    from chatterbox.tts_turbo import ChatterboxTurboTTS
+
+    Default behavior (DISABLE_WATERMARKING = False) keeps watermarking enabled.
 """
 
 from __future__ import annotations
 
 
 import torch
+
+# Flag to control watermarking (default: True = watermark enabled)
+DISABLE_WATERMARKING = False
 
 
 # Monkey patch torch.Tensor.to() to prevent float64 on MPS
@@ -72,6 +87,7 @@ def apply_chatterbox_patches() -> None:
     """
     _patch_s3tokenizer()
     _patch_voice_encoder()
+    _patch_watermarking()
 
 
 def _patch_s3tokenizer() -> None:
@@ -235,3 +251,48 @@ def _patch_voice_encoder() -> None:
     inference_patched.__patched__ = True  # type: ignore[attr-defined]
     inference_patched.__wrapped__ = orig_inference  # type: ignore[attr-defined]
     VoiceEncoder.inference = inference_patched  # type: ignore[assignment]
+
+
+def _patch_watermarking() -> None:
+    """
+    Optionally disable Perth watermarking by patching the apply_watermark method.
+    When DISABLE_WATERMARKING is True, watermark application becomes a no-op.
+    """
+    if not DISABLE_WATERMARKING:
+        return  # Watermarking enabled, no patching needed
+
+    # Patch all TTS/VC modules that use watermarking
+    module_names = ['tts_turbo', 'tts', 'vc', 'mtl_tts']
+
+    for module_name in module_names:
+        try:
+            from importlib import import_module
+            mod = import_module(f'chatterbox.{module_name}')
+
+            # Find classes that have a watermarker
+            for attr_name in dir(mod):
+                if attr_name.startswith('_'):
+                    continue
+                attr = getattr(mod, attr_name)
+                if not isinstance(attr, type):
+                    continue
+
+                # Check if this class has a watermarker attribute
+                if hasattr(attr, '__init__'):
+                    orig_init = attr.__init__
+
+                    def make_patched_init(original_init, class_ref):
+                        def init_with_watermark_disable(self, *args, **kwargs):
+                            original_init(self, *args, **kwargs)
+                            # If watermarker exists, replace its apply_watermark with no-op
+                            if hasattr(self, 'watermarker') and self.watermarker is not None:
+                                # Store original for potential re-enabling
+                                self.watermarker._original_apply_watermark = self.watermarker.apply_watermark
+                                # Replace with pass-through function
+                                self.watermarker.apply_watermark = lambda wav, sample_rate: wav
+                        return init_with_watermark_disable
+
+                    attr.__init__ = make_patched_init(orig_init, attr)
+
+        except (ImportError, AttributeError):
+            pass

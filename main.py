@@ -8,6 +8,9 @@ warnings.filterwarnings("ignore", category=FutureWarning, module="diffusers.mode
 
 # total frickin hack. not proud.
 import monkeypatches
+
+# Optional: disable watermarking by setting this to True before applying patches
+# monkeypatches.DISABLE_WATERMARKING = True
 monkeypatches.apply_chatterbox_patches()
 
 from chatterbox.tts_turbo import ChatterboxTurboTTS
